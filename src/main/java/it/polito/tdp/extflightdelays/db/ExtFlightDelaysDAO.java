@@ -7,9 +7,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import it.polito.tdp.extflightdelays.model.Airline;
 import it.polito.tdp.extflightdelays.model.Airport;
+import it.polito.tdp.extflightdelays.model.Collegamento;
 import it.polito.tdp.extflightdelays.model.Flight;
 
 public class ExtFlightDelaysDAO {
@@ -91,5 +93,43 @@ public class ExtFlightDelaysDAO {
 			throw new RuntimeException("Error Connection Database");
 		}
 	}
+	
+	public List<Collegamento> prendiCollegamenti(int miglia, Map<Integer, Airport> mappa) {
+		String sql = "SELECT f.ORIGIN_AIRPORT_ID part, f.DESTINATION_AIRPORT_ID dest, AVG(f.DISTANCE) peso " + 
+				"FROM flights f " + 
+				"GROUP BY f.ORIGIN_AIRPORT_ID, f.DESTINATION_AIRPORT_ID " + 
+				"HAVING AVG (f.DISTANCE)> ? ";
+		List<Collegamento> result = new ArrayList<Collegamento>();
+
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, miglia);
+			ResultSet rs = st.executeQuery();
+
+			while (rs.next()) {
+				if(mappa.containsKey(rs.getInt("part"))&& mappa.containsKey(rs.getInt("dest"))) {
+					Airport a1 = mappa.get(rs.getInt("part"));
+					Airport a2 = mappa.get(rs.getInt("dest"));
+					Integer peso = rs.getInt("peso");
+					
+					Collegamento ctemp = new Collegamento(a1, a2, peso);
+					
+					result.add(ctemp);
+					
+				}
+				
+			}
+
+			conn.close();
+			return result;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Errore connessione al database");
+			throw new RuntimeException("Error Connection Database");
+		}
+	}
+
 }
 
